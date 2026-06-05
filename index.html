@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Motion X | تور سه‌بعدی مجموعه گیمینگ پالادیوم</title>
+<meta name="description" content="تور مجازی سه‌بعدی موشن ایکس - بزرگترین مجموعه گیمینگ پالادیوم تهران. با صدای فضایی 8D و امکان قدم زدن در فضا." />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, sans-serif; color:#fff; }
+  canvas { display:block; }
+
+  /* ===== Loader ===== */
+  #loader {
+    position:fixed; inset:0; background: radial-gradient(ellipse at center, #1a0033 0%, #000 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1000;
+    transition: opacity 0.8s ease;
+  }
+  #loader h1 {
+    font-size: clamp(40px, 8vw, 90px); font-weight:900; letter-spacing:6px;
+    background: linear-gradient(90deg, #00f0ff, #ff00aa, #00f0ff);
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip:text; color:transparent;
+    animation: shine 3s linear infinite;
+    text-shadow: 0 0 40px rgba(0,240,255,0.3);
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+  #loader .sub { color:#888; margin-top:10px; font-size:14px; letter-spacing:3px; }
+  .progress-wrap { width: 280px; height: 4px; background:#222; border-radius:4px; margin-top:30px; overflow:hidden; }
+  .progress-bar { height:100%; width:0%; background: linear-gradient(90deg,#00f0ff,#ff00aa); transition:width 0.3s; box-shadow:0 0 20px #00f0ff; }
+  #start-btn {
+    margin-top:35px; padding:14px 40px; font-size:16px; font-weight:700; letter-spacing:2px;
+    background: linear-gradient(135deg, #00f0ff, #ff00aa); color:#000; border:none; border-radius:50px;
+    cursor:pointer; opacity:0; pointer-events:none; transition: all 0.3s;
+    box-shadow: 0 0 30px rgba(255,0,170,0.5);
+  }
+  #start-btn.ready { opacity:1; pointer-events:auto; }
+  #start-btn:hover { transform: scale(1.05); box-shadow: 0 0 50px rgba(0,240,255,0.8); }
+  .hint { margin-top:20px; color:#666; font-size:12px; }
+
+  /* ===== HUD ===== */
+  #hud {
+    position:fixed; top:0; left:0; right:0; padding:20px; display:flex; justify-content:space-between; align-items:flex-start;
+    pointer-events:none; z-index:10; opacity:0; transition:opacity 0.5s;
+  }
+  #hud.visible { opacity:1; }
+  .brand {
+    font-size:24px; font-weight:900; letter-spacing:4px;
+    background: linear-gradient(90deg, #00f0ff, #ff00aa);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow: 0 0 20px rgba(0,240,255,0.5);
+  }
+  .brand small { display:block; font-size:10px; letter-spacing:6px; color:#666; font-weight:400; margin-top:2px;}
+
+  .controls {
+    pointer-events:auto; background:rgba(10,10,20,0.7); backdrop-filter: blur(15px);
+    border:1px solid rgba(255,255,255,0.1); padding:10px 16px; border-radius:30px;
+    display:flex; gap:14px; align-items:center; font-size:13px;
+  }
+  .controls button {
+    background:none; border:none; color:#fff; cursor:pointer; padding:6px;
+    display:flex; align-items:center; gap:6px; font-size:13px; transition:color 0.2s;
+  }
+  .controls button:hover { color:#00f0ff; }
+  .icon { width:18px; height:18px; }
+
+  /* ===== Crosshair ===== */
+  #crosshair {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.5);
+    pointer-events:none; z-index:5; transition: all 0.2s; opacity:0;
+  }
+  #crosshair.active { opacity:1; }
+  #crosshair.hover { width:24px; height:24px; background:transparent; border:2px solid #00f0ff; box-shadow:0 0 15px #00f0ff; }
+
+  /* ===== Bottom controls bar ===== */
+  #bottom-bar {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:rgba(10,10,20,0.75); backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.1); border-radius:50px;
+    padding:10px 25px; display:flex; gap:20px; align-items:center;
+    z-index:10; opacity:0; transition:opacity 0.5s; font-size:12px;
+  }
+  #bottom-bar.visible { opacity:1; }
+  .key { display:inline-block; min-width:22px; padding:3px 7px; background:rgba(255,255,255,0.1);
+         border:1px solid rgba(255,255,255,0.2); border-radius:5px; text-align:center; font-family:monospace; font-weight:bold; }
+  .key-group { display:flex; gap:6px; align-items:center; color:#aaa; }
+
+  /* ===== Info Panel (when clicking hotspot) ===== */
+  #info-panel {
+    position:fixed; top:50%; right:30px; transform:translateY(-50%);
+    width: min(380px, 90vw); background:rgba(10,10,20,0.92); backdrop-filter:blur(25px);
+    border:1px solid rgba(0,240,255,0.3); border-radius:20px; padding:25px;
+    z-index:20; opacity:0; pointer-events:none; transition: all 0.4s;
+    box-shadow: 0 0 60px rgba(0,240,255,0.2);
+  }
+  #info-panel.visible { opacity:1; pointer-events:auto; transform:translateY(-50%) translateX(0); }
+  #info-panel .img-wrap {
+    width:100%; height:200px; border-radius:12px; overflow:hidden; margin-bottom:15px;
+    background: linear-gradient(135deg,#1a0033,#000);
+  }
+  #info-panel img { width:100%; height:100%; object-fit:cover; }
+  #info-panel h2 { font-size:22px; margin-bottom:8px; background: linear-gradient(90deg,#00f0ff,#ff00aa);
+                   -webkit-background-clip:text; background-clip:text; color:transparent;}
+  #info-panel .badge { display:inline-block; padding:4px 10px; background:rgba(0,240,255,0.15);
+                       border:1px solid rgba(0,240,255,0.4); border-radius:20px; font-size:11px;
+                       color:#00f0ff; margin-bottom:12px; letter-spacing:1px; }
+  #info-panel p { color:#bbb; line-height:1.7; font-size:14px; }
+  #info-panel .close { position:absolute; top:12px; left:12px; background:none; border:none;
+                       color:#888; font-size:24px; cursor:pointer; width:32px; height:32px; }
+  #info-panel .close:hover { color:#fff; }
+  #info-panel .cta { margin-top:18px; display:flex; gap:10px; }
+  #info-panel .cta button { flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; font-size:13px; }
+  #info-panel .cta .primary { background: linear-gradient(90deg,#00f0ff,#ff00aa); color:#000; }
+  #info-panel .cta .secondary { background:rgba(255,255,255,0.1); color:#fff; }
+
+  /* ===== Mobile joystick ===== */
+  #joystick {
+    position:fixed; bottom:30px; right:30px; width:120px; height:120px;
+    background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.15);
+    border-radius:50%; z-index:10; display:none; touch-action:none;
+  }
+  #joystick .stick {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:50px; height:50px; background:rgba(0,240,255,0.4);
+    border:2px solid #00f0ff; border-radius:50%; box-shadow:0 0 20px #00f0ff;
+  }
+  @media (max-width: 768px) {
+    #joystick { display:block; }
+    #bottom-bar { display:none; }
+  }
+
+  /* ===== Mini-map ===== */
+  #minimap {
+    position:fixed; bottom:20px; right:20px; width:160px; height:160px;
+    background:rgba(10,10,20,0.7); backdrop-filter:blur(15px);
+    border:1px solid rgba(255,255,255,0.1); border-radius:15px;
+    z-index:9; opacity:0; transition:opacity 0.5s;
+  }
+  #minimap.visible { opacity:1; }
+  @media (max-width:768px) { #minimap { display:none; } }
+</style>
+</head>
+<body>
+
+<!-- ===== LOADER ===== -->
+<div id="loader">
+  <h1>MOTION&nbsp;X</h1>
+  <div class="sub">PALLADIUM • TEHRAN</div>
+  <div class="progress-wrap"><div class="progress-bar" id="prog"></div></div>
+  <button id="start-btn">🎧 ورود به تجربه ۳بعدی</button>
+  <div class="hint">برای بهترین تجربه از <b style="color:#00f0ff">هدفون</b> استفاده کنید</div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div id="hud">
+  <div class="brand">MOTION X<small>VIRTUAL TOUR</small></div>
+  <div class="controls">
+    <button id="btn-music" title="موزیک">🎵 <span>موزیک 8D</span></button>
+    <button id="btn-fullscreen" title="تمام صفحه">⛶</button>
+    <button id="btn-help" title="راهنما">?</button>
+  </div>
+</div>
+
+<div id="crosshair"></div>
+
+<div id="bottom-bar">
+  <div class="key-group"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> حرکت</div>
+  <div class="key-group"><span class="key">🖱</span> چرخش دوربین</div>
+  <div class="key-group"><span class="key">SHIFT</span> دویدن</div>
+  <div class="key-group"><span class="key">CLICK</span> روی نقاط آبی</div>
+  <div class="key-group"><span class="key">ESC</span> خروج</div>
+</div>
+
+<canvas id="minimap"></canvas>
+
+<!-- ===== INFO PANEL ===== -->
+<div id="info-panel">
+  <button class="close" onclick="closeInfo()">×</button>
+  <div class="img-wrap"><img id="info-img" src="" alt=""/></div>
+  <div class="badge" id="info-badge">ZONE</div>
+  <h2 id="info-title"></h2>
+  <p id="info-desc"></p>
+  <div class="cta">
+    <button class="primary" onclick="alert('در نسخه نهایی به صفحه رزرو متصل میشه')">🎮 رزرو نوبت</button>
+    <button class="secondary" onclick="closeInfo()">بستن</button>
+  </div>
+</div>
+
+<!-- ===== Mobile Joystick ===== -->
+<div id="joystick"><div class="stick" id="stick"></div></div>
+
+<!-- ===== Three.js via importmap ===== -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+// ===== DATA: زون‌های Motion X =====
+const ZONES = [
+  { id:'vr',      title:'VR ZONE',        badge:'واقعیت مجازی',
+    desc:'تجربه‌ی واقعیت مجازی با هدست‌های Meta Quest 3 و HTC Vive Pro 2. بازی‌های Beat Saber، Half-Life Alyx، Superhot VR و بیش از ۸۰ تجربه‌ی VR.',
+    img:'public/images/game-vr.jpg', pos:[-8, 0, -8], color:0x00ffff },
+  { id:'racing',  title:'RACING SIM',     badge:'شبیه‌ساز ماشین',
+    desc:'کاکپیت‌های حرفه‌ای Playseat با فرمان Logitech G Pro و سه مانیتور منحنی. بازی‌های Assetto Corsa، iRacing، F1 24 و GT7.',
+    img:'public/images/game-racing.jpg', pos:[8, 0, -8], color:0xff0066 },
+  { id:'ps5',     title:'PS5 LOUNGE',     badge:'پلی‌استیشن ۵',
+    desc:'سالن اختصاصی پلی‌استیشن ۵ با مانیتورهای 4K و صندلی‌های گیمینگ. عناوین انحصاری مثل Spider-Man 2، GoW Ragnarök و EA FC.',
+    img:'public/images/game-ps5.jpg', pos:[-8, 0, 8], color:0x0099ff },
+  { id:'pc',      title:'PC ESPORTS',     badge:'گیمینگ PC',
+    desc:'سیستم‌های RTX 4090 با مانیتور 240Hz برای CS2، Valorant، League of Legends و Apex Legends. مناسب تورنومنت‌های حرفه‌ای.',
+    img:'public/images/game-pc.jpg', pos:[8, 0, 8], color:0xaa00ff },
+  { id:'arcade',  title:'ARCADE ZONE',    badge:'بازی‌های قدیمی',
+    desc:'دستگاه‌های آرکید کلاسیک، ایر هاکی، بسکتبال، Claw Machine و سیمولاتورهای دایناسور. خاطره‌انگیز برای همه‌ی سنین.',
+    img:'public/images/game-arcade.jpg', pos:[0, 0, -14], color:0xffaa00 },
+  { id:'billiard',title:'BILLIARD & CAFE',badge:'بیلیارد و کافه',
+    desc:'میزهای بیلیارد و اسنوکر استاندارد، فضای کافه با نوشیدنی‌های اختصاصی، فضای دلنشین برای استراحت بین بازی‌ها.',
+    img:'public/images/game-billiard.jpg', pos:[0, 0, 14], color:0x00ff88 },
+];
+
+// ===== SCENE SETUP =====
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0014);
+scene.fog = new THREE.FogExp2(0x0a0014, 0.025);
+
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 1.7, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+// ===== LIGHTING =====
+scene.add(new THREE.AmbientLight(0x404060, 0.3));
+const moonLight = new THREE.DirectionalLight(0x8080ff, 0.4);
+moonLight.position.set(10, 20, 5);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(2048,2048);
+moonLight.shadow.camera.left = -30; moonLight.shadow.camera.right = 30;
+moonLight.shadow.camera.top = 30; moonLight.shadow.camera.bottom = -30;
+scene.add(moonLight);
+
+// neon strip lights
+[
+  [0x00f0ff, -20, 4, 0], [0xff00aa, 20, 4, 0],
+  [0xaa00ff, 0, 4, -20], [0x00ff88, 0, 4, 20],
+].forEach(([c,x,y,z]) => {
+  const l = new THREE.PointLight(c, 50, 25, 1.5);
+  l.position.set(x,y,z); scene.add(l);
+});
+
+// ===== FLOOR (glossy reflective look) =====
+const floorGeo = new THREE.PlaneGeometry(60, 60, 50, 50);
+const floorMat = new THREE.MeshStandardMaterial({
+  color: 0x111122, metalness: 0.9, roughness: 0.3,
+});
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI/2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// grid overlay
+const grid = new THREE.GridHelper(60, 30, 0x00f0ff, 0x222244);
+grid.material.opacity = 0.25; grid.material.transparent = true;
+scene.add(grid);
+
+// ===== WALLS =====
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x0a0a1a, metalness:0.6, roughness:0.4 });
+function makeWall(w,h,d,x,y,z){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), wallMat);
+  m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
+}
+makeWall(60, 8, 0.5, 0, 4, -30);
+makeWall(60, 8, 0.5, 0, 4, 30);
+makeWall(0.5, 8, 60, -30, 4, 0);
+makeWall(0.5, 8, 60,  30, 4, 0);
+
+// ceiling
+const ceil = new THREE.Mesh(new THREE.PlaneGeometry(60,60),
+  new THREE.MeshStandardMaterial({ color:0x05050a, side:THREE.BackSide }));
+ceil.rotation.x = -Math.PI/2; ceil.position.y = 8; scene.add(ceil);
+
+// ===== ZONE PODIUMS + HOTSPOTS =====
+const loader = new THREE.TextureLoader();
+const hotspots = [];
+
+ZONES.forEach(zone => {
+  // podium
+  const podium = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.2, 2.5, 0.4, 32),
+    new THREE.MeshStandardMaterial({ color:0x111122, metalness:0.8, roughness:0.3, emissive:zone.color, emissiveIntensity:0.15 })
+  );
+  podium.position.set(zone.pos[0], 0.2, zone.pos[2]);
+  podium.castShadow = true; podium.receiveShadow = true;
+  scene.add(podium);
+
+  // billboard with image
+  const tex = loader.load(zone.img);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const billboard = new THREE.Mesh(
+    new THREE.PlaneGeometry(3, 2),
+    new THREE.MeshBasicMaterial({ map: tex })
+  );
+  billboard.position.set(zone.pos[0], 2.5, zone.pos[2]);
+  scene.add(billboard);
+
+  // glowing frame
+  const frame = new THREE.Mesh(
+    new THREE.RingGeometry(1.8, 2.0, 32),
+    new THREE.MeshBasicMaterial({ color:zone.color, side:THREE.DoubleSide })
+  );
+  frame.position.set(zone.pos[0], 2.5, zone.pos[2] - 0.02);
+  scene.add(frame);
+
+  // point light per zone
+  const zl = new THREE.PointLight(zone.color, 8, 15, 2);
+  zl.position.set(zone.pos[0], 3.5, zone.pos[2]);
+  scene.add(zl);
+
+  // hotspot floating orb
+  const orb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 24, 24),
+    new THREE.MeshBasicMaterial({ color:zone.color })
+  );
+  orb.position.set(zone.pos[0], 4.2, zone.pos[2]);
+  orb.userData.zone = zone;
+  orb.userData.isHotspot = true;
+  scene.add(orb);
+
+  // outer glow
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 24, 24),
+    new THREE.MeshBasicMaterial({ color:zone.color, transparent:true, opacity:0.25 })
+  );
+  glow.position.copy(orb.position);
+  scene.add(glow);
+
+  hotspots.push({ orb, glow, zone, basePosY: orb.position.y });
+});
+
+// central feature: rotating MOTION X logo
+const centerLight = new THREE.PointLight(0xffffff, 30, 20, 2);
+centerLight.position.set(0, 6, 0);
+scene.add(centerLight);
+
+// ===== CONTROLS =====
+const controls = new PointerLockControls(camera, renderer.domElement);
+scene.add(controls.object);
+
+const keys = {};
+addEventListener('keydown', e => keys[e.code] = true);
+addEventListener('keyup',   e => keys[e.code] = false);
+
+let velocity = new THREE.Vector3();
+let direction = new THREE.Vector3();
+const SPEED = 5;
+const SPEED_RUN = 9;
+
+// mobile joystick
+let joyVec = {x:0, y:0};
+const joy = document.getElementById('joystick');
+const stick = document.getElementById('stick');
+let joyActive = false, joyStart = {x:0,y:0};
+joy.addEventListener('touchstart', e => {
+  joyActive = true;
+  const t = e.touches[0]; const r = joy.getBoundingClientRect();
+  joyStart = { x: r.left + r.width/2, y: r.top + r.height/2 };
+});
+joy.addEventListener('touchmove', e => {
+  if (!joyActive) return;
+  const t = e.touches[0];
+  const dx = t.clientX - joyStart.x, dy = t.clientY - joyStart.y;
+  const max = 50; const len = Math.min(Math.hypot(dx,dy), max);
+  const ang = Math.atan2(dy, dx);
+  const px = Math.cos(ang)*len, py = Math.sin(ang)*len;
+  stick.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+  joyVec.x = px/max; joyVec.y = py/max;
+  e.preventDefault();
+}, { passive:false });
+joy.addEventListener('touchend', () => {
+  joyActive = false; joyVec = {x:0,y:0};
+  stick.style.transform = 'translate(-50%,-50%)';
+});
+
+// ===== RAYCASTER for hotspot detection =====
+const raycaster = new THREE.Raycaster();
+const center = new THREE.Vector2(0,0);
+const crosshair = document.getElementById('crosshair');
+
+let hovered = null;
+
+renderer.domElement.addEventListener('click', () => {
+  if (hovered && controls.isLocked) {
+    openInfo(hovered.userData.zone);
+  }
+});
+
+// ===== AUDIO: 8D Music + Spatial Hotspot Sounds =====
+let audioCtx = null;
+let listener = null;
+let musicGain = null;
+let musicPanner = null;
+let musicNodes = [];
+let musicOn = true;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // ===== Synth-generated ambient pad (no external file) =====
+  // Multiple detuned oscillators -> filter -> panner that rotates around listener
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 0.15;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 800;
+  filter.Q.value = 4;
+
+  musicPanner = audioCtx.createPanner();
+  musicPanner.panningModel = 'HRTF';
+  musicPanner.distanceModel = 'inverse';
+  musicPanner.refDistance = 1;
+  musicPanner.maxDistance = 100;
+  musicPanner.rolloffFactor = 0.5;
+  musicPanner.positionX.value = 5;
+  musicPanner.positionY.value = 0;
+  musicPanner.positionZ.value = 0;
+
+  // ambient pad chord (Am9-ish)
+  const freqs = [110, 164.81, 220, 246.94, 329.63];
+  freqs.forEach((f, i) => {
+    const o1 = audioCtx.createOscillator(); o1.type='sawtooth'; o1.frequency.value=f;
+    const o2 = audioCtx.createOscillator(); o2.type='sawtooth'; o2.frequency.value=f*1.005; // detune
+    const g = audioCtx.createGain(); g.gain.value = 0.12;
+    o1.connect(g); o2.connect(g); g.connect(filter);
+    // slow LFO on amplitude for breathing
+    const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.1 + i*0.03;
+    const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 0.06;
+    lfo.connect(lfoGain); lfoGain.connect(g.gain);
+    o1.start(); o2.start(); lfo.start();
+    musicNodes.push(o1,o2,lfo);
+  });
+  filter.connect(musicPanner);
+  musicPanner.connect(musicGain);
+  musicGain.connect(audioCtx.destination);
+
+  // ===== Per-zone spatial sound (light beeps with unique freqs) =====
+  ZONES.forEach((zone, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 220 + i*55;
+    const g = audioCtx.createGain();
+    g.gain.value = 0;
+
+    const panner = audioCtx.createPanner();
+    panner.panningModel = 'HRTF';
+    panner.distanceModel = 'inverse';
+    panner.refDistance = 2;
+    panner.maxDistance = 20;
+    panner.rolloffFactor = 2;
+    panner.positionX.value = zone.pos[0];
+    panner.positionY.value = 2;
+    panner.positionZ.value = zone.pos[2];
+
+    osc.connect(g); g.connect(panner); panner.connect(audioCtx.destination);
+    osc.start();
+
+    // pulsing beep
+    const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.5 + Math.random()*0.3;
+    const lfoG = audioCtx.createGain(); lfoG.gain.value = 0.04;
+    lfo.connect(lfoG); lfoG.connect(g.gain); lfo.start();
+  });
+}
+
+// ===== START BUTTON =====
+const startBtn = document.getElementById('start-btn');
+const loaderEl = document.getElementById('loader');
+const progBar = document.getElementById('prog');
+
+// fake progress while textures load
+let prog = 0;
+const progInterval = setInterval(() => {
+  prog = Math.min(prog + 8 + Math.random()*10, 100);
+  progBar.style.width = prog + '%';
+  if (prog >= 100) {
+    clearInterval(progInterval);
+    startBtn.classList.add('ready');
+  }
+}, 180);
+
+startBtn.addEventListener('click', () => {
+  initAudio();
+  audioCtx.resume();
+  loaderEl.style.opacity = 0;
+  setTimeout(() => loaderEl.style.display='none', 800);
+  document.getElementById('hud').classList.add('visible');
+  document.getElementById('bottom-bar').classList.add('visible');
+  document.getElementById('crosshair').classList.add('active');
+  document.getElementById('minimap').classList.add('visible');
+  // try pointer lock (desktop)
+  if (!('ontouchstart' in window)) {
+    setTimeout(() => controls.lock(), 100);
+  }
+});
+
+// click anywhere on canvas to re-lock pointer
+renderer.domElement.addEventListener('click', () => {
+  if (!controls.isLocked && !('ontouchstart' in window)) controls.lock();
+});
+
+// ===== HUD BUTTONS =====
+document.getElementById('btn-music').addEventListener('click', () => {
+  musicOn = !musicOn;
+  if (musicGain) musicGain.gain.setTargetAtTime(musicOn?0.15:0, audioCtx.currentTime, 0.3);
+});
+document.getElementById('btn-fullscreen').addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+document.getElementById('btn-help').addEventListener('click', () => {
+  alert('🎮 راهنما:\n\nW/A/S/D : حرکت\nSHIFT : دویدن\nموس : چرخش دوربین\nکلیک : باز کردن اطلاعات زون\nESC : خروج از حالت بازی\n\n🎧 برای تجربه کامل صدای فضایی، حتما از هدفون استفاده کنید.');
+});
+
+// ===== INFO PANEL =====
+const infoPanel = document.getElementById('info-panel');
+window.openInfo = (zone) => {
+  document.getElementById('info-img').src = zone.img;
+  document.getElementById('info-title').textContent = zone.title;
+  document.getElementById('info-badge').textContent = zone.badge;
+  document.getElementById('info-desc').textContent = zone.desc;
+  infoPanel.classList.add('visible');
+};
+window.closeInfo = () => infoPanel.classList.remove('visible');
+
+// ===== MINIMAP =====
+const mm = document.getElementById('minimap');
+mm.width = 160; mm.height = 160;
+const mctx = mm.getContext('2d');
+
+function drawMinimap() {
+  mctx.clearRect(0,0,160,160);
+  mctx.fillStyle = 'rgba(0,240,255,0.05)';
+  mctx.fillRect(0,0,160,160);
+
+  // map 60x60 world -> 160x160 canvas
+  const toMap = (x,z) => ({ x: (x+30)/60*160, y: (z+30)/60*160 });
+
+  // walls
+  mctx.strokeStyle = 'rgba(0,240,255,0.4)';
+  mctx.lineWidth = 1;
+  mctx.strokeRect(0,0,160,160);
+
+  // zones
+  ZONES.forEach(z => {
+    const p = toMap(z.pos[0], z.pos[2]);
+    mctx.fillStyle = '#' + z.color.toString(16).padStart(6,'0');
+    mctx.beginPath(); mctx.arc(p.x, p.y, 4, 0, Math.PI*2); mctx.fill();
+  });
+
+  // player
+  const p = toMap(camera.position.x, camera.position.z);
+  mctx.save();
+  mctx.translate(p.x, p.y);
+  mctx.rotate(-camera.rotation.y);
+  mctx.fillStyle = '#fff';
+  mctx.beginPath();
+  mctx.moveTo(0,-6); mctx.lineTo(4,4); mctx.lineTo(-4,4);
+  mctx.closePath(); mctx.fill();
+  mctx.restore();
+}
+
+// ===== ANIMATION LOOP =====
+const clock = new THREE.Clock();
+let musicAngle = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const t = clock.elapsedTime;
+
+  // movement
+  const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? SPEED_RUN : SPEED;
+  velocity.x -= velocity.x * 10 * dt;
+  velocity.z -= velocity.z * 10 * dt;
+
+  direction.z = Number(keys['KeyW']||keys['ArrowUp']) - Number(keys['KeyS']||keys['ArrowDown']);
+  direction.x = Number(keys['KeyD']||keys['ArrowRight']) - Number(keys['KeyA']||keys['ArrowLeft']);
+  direction.normalize();
+
+  // joystick
+  if (joyVec.x || joyVec.y) {
+    direction.x = joyVec.x;
+    direction.z = -joyVec.y;
+  }
+
+  if (direction.z || direction.x) {
+    velocity.z -= direction.z * speed * 8 * dt;
+    velocity.x -= direction.x * speed * 8 * dt;
+  }
+
+  if (controls.isLocked || joyVec.x || joyVec.y) {
+    controls.moveRight(-velocity.x * dt);
+    controls.moveForward(-velocity.z * dt);
+  }
+
+  // clamp inside walls
+  camera.position.x = THREE.MathUtils.clamp(camera.position.x, -28, 28);
+  camera.position.z = THREE.MathUtils.clamp(camera.position.z, -28, 28);
+  camera.position.y = 1.7;
+
+  // update audio listener position/orientation
+  if (audioCtx && audioCtx.listener) {
+    const L = audioCtx.listener;
+    if (L.positionX) {
+      L.positionX.value = camera.position.x;
+      L.positionY.value = camera.position.y;
+      L.positionZ.value = camera.position.z;
+      const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+      L.forwardX.value = fwd.x; L.forwardY.value = fwd.y; L.forwardZ.value = fwd.z;
+      L.upX.value = 0; L.upY.value = 1; L.upZ.value = 0;
+    }
+    // 8D rotation: music panner orbits around listener
+    if (musicPanner && musicPanner.positionX) {
+      musicAngle += dt * 0.6;
+      const r = 4;
+      musicPanner.positionX.value = camera.position.x + Math.cos(musicAngle)*r;
+      musicPanner.positionY.value = camera.position.y + Math.sin(musicAngle*0.5)*1.5;
+      musicPanner.positionZ.value = camera.position.z + Math.sin(musicAngle)*r;
+    }
+  }
+
+  // animate hotspots
+  hotspots.forEach((h, i) => {
+    h.orb.position.y = h.basePosY + Math.sin(t*2 + i)*0.15;
+    h.glow.position.copy(h.orb.position);
+    h.glow.scale.setScalar(1 + Math.sin(t*3 + i)*0.2);
+    h.orb.rotation.y += dt;
+  });
+
+  // raycast for hover
+  if (controls.isLocked) {
+    raycaster.setFromCamera(center, camera);
+    const hits = raycaster.intersectObjects(hotspots.map(h=>h.orb));
+    if (hits.length && hits[0].distance < 15) {
+      hovered = hits[0].object;
+      crosshair.classList.add('hover');
+    } else {
+      hovered = null;
+      crosshair.classList.remove('hover');
+    }
+  }
+
+  drawMinimap();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
