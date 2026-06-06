@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Motion X | تور سه‌بعدی مجموعه گیمینگ پالادیوم</title>
+<meta name="description" content="تجربه تور مجازی سه‌بعدی Motion X — مجموعه گیمینگ پالادیوم تهران با VR، Racing، PS5، PC و صدای فضایی 8D" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;900&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#000; font-family:'Vazirmatn', -apple-system, system-ui, sans-serif; color:#fff; -webkit-tap-highlight-color: transparent; }
+  canvas { display:block; }
+
+  /* ========== INTRO ========== */
+  #intro {
+    position: fixed; inset: 0; z-index: 100;
+    background: radial-gradient(circle at 50% 50%, #1a0033 0%, #000 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center;
+    transition: opacity .6s ease;
+  }
+  #intro .logo {
+    font-size: clamp(40px, 8vw, 90px); font-weight: 900;
+    background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+    background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: shimmer 3s linear infinite;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+  }
+  @keyframes shimmer { 0%{background-position:0% 50%} 100%{background-position:200% 50%} }
+  #intro .subtitle { color:#aaa; font-size:18px; margin-bottom:30px; }
+  #intro .stats { display:flex; gap:30px; margin-bottom:40px; flex-wrap:wrap; justify-content:center; }
+  #intro .stat { text-align:center; }
+  #intro .stat .num { font-size:28px; font-weight:700; color:#00ffff; }
+  #intro .stat .lbl { font-size:13px; color:#888; }
+  #intro .startBtn {
+    padding: 16px 44px; font-size:18px; font-weight:700;
+    background: linear-gradient(135deg, #00ffff, #ff00ff);
+    color:#000; border:none; border-radius: 50px; cursor:pointer;
+    box-shadow: 0 0 40px rgba(0,255,255,.5);
+    transition: transform .2s;
+    font-family: inherit;
+  }
+  #intro .startBtn:hover { transform: scale(1.05); }
+  #intro .hint { margin-top:24px; color:#666; font-size:13px; }
+
+  /* ========== LOADER ========== */
+  #loader {
+    position: fixed; inset:0; z-index: 99;
+    background:#000; display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+  }
+  #loader.show { display:flex; }
+  #loader .bar { width: min(400px, 80vw); height: 4px; background: #222; border-radius:4px; overflow:hidden; }
+  #loader .fill { height:100%; width:0%; background: linear-gradient(90deg, #00ffff, #ff00ff); transition: width .3s; }
+  #loader .txt { margin-top:14px; color:#888; font-size:14px; }
+
+  /* ========== HUD ========== */
+  #hud { position: fixed; inset:0; pointer-events: none; z-index: 10; display:none; }
+  #hud.show { display:block; }
+
+  /* Top bar */
+  .topbar {
+    position: absolute; top:0; left:0; right:0;
+    padding: 14px 20px;
+    display:flex; justify-content:space-between; align-items:center;
+    background: linear-gradient(180deg, rgba(0,0,0,.7), transparent);
+    pointer-events: auto;
+  }
+  .topbar .brand { font-size:22px; font-weight:900; background: linear-gradient(90deg, #00ffff, #ff00ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .topbar .ctrls { display:flex; gap:10px; }
+  .topbar .ctrls button {
+    background: rgba(255,255,255,.08); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.15); color:#fff;
+    width:40px; height:40px; border-radius: 10px;
+    cursor:pointer; font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    transition: all .2s;
+    font-family: inherit;
+  }
+  .topbar .ctrls button:hover { background: rgba(0,255,255,.2); border-color: #00ffff; }
+  .topbar .ctrls button.active { background: rgba(0,255,255,.3); border-color:#00ffff; color:#00ffff; }
+
+  /* Teleport menu (LEFT) */
+  .teleport {
+    position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+    display:flex; flex-direction:column; gap:8px;
+    pointer-events: auto;
+    max-width: 220px;
+  }
+  .teleport .label {
+    font-size: 11px; color:#888; text-transform: uppercase; letter-spacing:1px;
+    margin-bottom: 4px; text-align:right;
+  }
+  .teleport .tpbtn {
+    background: rgba(0,0,0,.65); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.15);
+    color:#fff; padding: 10px 14px; border-radius: 10px;
+    cursor:pointer; font-size:13px; font-weight:600;
+    display:flex; align-items:center; gap:10px;
+    transition: all .2s;
+    font-family: inherit;
+    text-align: right;
+  }
+  .teleport .tpbtn:hover { background: rgba(0,255,255,.15); border-color: #00ffff; transform: translateX(-4px); }
+  .teleport .tpbtn .dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; box-shadow: 0 0 10px currentColor; }
+  .teleport .tpbtn .name { flex:1; }
+
+  /* Mini-map (BOTTOM RIGHT) */
+  .minimap {
+    position: absolute; bottom: 20px; right: 20px;
+    width: 160px; height: 160px;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 12px; padding: 8px;
+    pointer-events: none;
+  }
+  .minimap canvas { width:100%; height:100%; border-radius:8px; }
+
+  /* Bottom info bar */
+  .infobar {
+    position: absolute; bottom:20px; left:50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.6); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 30px; padding: 10px 24px;
+    font-size: 13px; color:#ccc;
+    pointer-events: auto;
+  }
+  .infobar .key { background: rgba(255,255,255,.15); padding:2px 8px; border-radius:5px; margin: 0 3px; font-weight:600; color:#fff; }
+
+  /* Crosshair */
+  .crosshair {
+    position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+    width: 24px; height: 24px; pointer-events: none;
+  }
+  .crosshair::before, .crosshair::after {
+    content: ''; position: absolute; background: rgba(255,255,255,.7);
+    box-shadow: 0 0 4px rgba(0,0,0,.8);
+  }
+  .crosshair::before { width:2px; height:24px; left:11px; top:0; }
+  .crosshair::after { width:24px; height:2px; top:11px; left:0; }
+
+  /* Toast */
+  .toast {
+    position: absolute; top: 80px; left:50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.85); backdrop-filter: blur(10px);
+    border: 1px solid #00ffff; color:#00ffff;
+    padding: 10px 24px; border-radius: 30px;
+    font-size: 14px; font-weight: 600;
+    opacity: 0; transition: opacity .3s, transform .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+
+  /* "click to move" overlay (when pointer lock lost) */
+  .clickPrompt {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+    display: none; align-items:center; justify-content:center;
+    pointer-events: auto; cursor: pointer; z-index: 5;
+  }
+  .clickPrompt.show { display:flex; }
+  .clickPrompt .box {
+    background: rgba(0,0,0,.8);
+    border: 2px solid #00ffff;
+    border-radius: 16px;
+    padding: 30px 50px;
+    text-align: center;
+    box-shadow: 0 0 50px rgba(0,255,255,.3);
+  }
+  .clickPrompt .icon { font-size: 48px; margin-bottom: 10px; }
+  .clickPrompt .ttl { font-size: 20px; font-weight: 700; color:#00ffff; margin-bottom: 6px; }
+  .clickPrompt .sub { font-size: 14px; color:#aaa; }
+
+  /* Mobile joystick */
+  .joy {
+    position: absolute; bottom: 30px; left: 30px;
+    width: 120px; height: 120px;
+    background: rgba(0,0,0,.4); backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,.2);
+    border-radius: 50%; display:none;
+    touch-action: none; pointer-events: auto;
+  }
+  .joy .stick {
+    position: absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+    width: 50px; height: 50px;
+    background: rgba(0,255,255,.4); border:2px solid #00ffff; border-radius:50%;
+    pointer-events: none;
+  }
+  .lookpad {
+    position: absolute; top:0; right:0; width:50%; height:100%;
+    display:none; pointer-events:auto; touch-action: none;
+    z-index: 4;
+  }
+  @media (max-width: 768px) {
+    .joy, .lookpad { display:block; }
+    .teleport { max-width: 160px; left: 10px; }
+    .teleport .tpbtn { padding: 8px 10px; font-size: 11px; }
+    .topbar { padding: 10px 12px; }
+    .topbar .brand { font-size: 18px; }
+    .minimap { width: 110px; height: 110px; bottom: 170px; }
+    .infobar { display: none; }
+  }
+
+  /* Detail panel */
+  .panel {
+    position: fixed; top:50%; left:50%; transform: translate(-50%,-50%) scale(.95);
+    width: min(560px, 92vw); max-height: 88vh;
+    background: linear-gradient(180deg, rgba(20,20,30,.97), rgba(0,0,0,.97));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0,255,255,.4);
+    border-radius: 20px; overflow:hidden;
+    box-shadow: 0 25px 80px rgba(0,255,255,.2);
+    opacity:0; visibility:hidden;
+    transition: all .3s;
+    z-index: 50;
+  }
+  .panel.show { opacity:1; visibility:visible; transform: translate(-50%,-50%) scale(1); }
+  .panel .media { width:100%; height: 240px; background:#000; position:relative; overflow:hidden; }
+  .panel .media img, .panel .media video { width:100%; height:100%; object-fit: cover; }
+  .panel .media::after { content:''; position:absolute; inset:0; background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,.9)); pointer-events:none; }
+  .panel .close {
+    position: absolute; top:14px; left:14px;
+    width:36px; height:36px; border-radius:50%;
+    background: rgba(0,0,0,.7); color:#fff;
+    border:1px solid rgba(255,255,255,.2);
+    cursor:pointer; font-size:20px; z-index:2;
+    font-family: inherit;
+  }
+  .panel .body { padding: 24px; }
+  .panel .body .tag {
+    display:inline-block; padding: 4px 12px;
+    background: rgba(0,255,255,.15); border:1px solid #00ffff;
+    color:#00ffff; font-size:12px; font-weight:600;
+    border-radius: 20px; margin-bottom:10px;
+  }
+  .panel .body h2 { font-size: 26px; font-weight:900; margin-bottom: 12px; }
+  .panel .body p { color:#bbb; line-height:1.8; font-size:15px; margin-bottom:20px; }
+  .panel .body .actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .panel .body .actions button {
+    flex:1; min-width: 130px;
+    padding: 12px 18px; border-radius: 10px;
+    background: linear-gradient(135deg, #00ffff, #ff00ff); color:#000;
+    border:none; font-weight:700; cursor:pointer;
+    font-family: inherit; font-size: 14px;
+  }
+  .panel .body .actions .ghost { background: transparent; border:1px solid rgba(255,255,255,.25); color:#fff; }
+</style>
+</head>
+<body>
+
+<!-- ========== INTRO ========== -->
+<div id="intro">
+  <div class="logo">MOTION X</div>
+  <div class="subtitle">مجموعه گیمینگ پالادیوم تهران</div>
+  <div class="stats">
+    <div class="stat"><div class="num">۶</div><div class="lbl">زون بازی</div></div>
+    <div class="stat"><div class="num">۸۰+</div><div class="lbl">عنوان VR</div></div>
+    <div class="stat"><div class="num">۳۶۰°</div><div class="lbl">تور سه‌بعدی</div></div>
+    <div class="stat"><div class="num">8D</div><div class="lbl">صدای فضایی</div></div>
+  </div>
+  <button class="startBtn" id="startBtn">🎮 ورود به تجربه ۳بعدی</button>
+  <div class="hint">🎧 برای تجربه‌ی کامل صدای 8D، هدفون بزن</div>
+</div>
+
+<!-- ========== LOADER ========== -->
+<div id="loader">
+  <div class="bar"><div class="fill" id="fill"></div></div>
+  <div class="txt" id="ltxt">در حال آماده‌سازی فضا...</div>
+</div>
+
+<!-- ========== HUD ========== -->
+<div id="hud">
+  <div class="topbar">
+    <div class="brand">MOTION X</div>
+    <div class="ctrls">
+      <button id="btnMusic" class="active" title="موزیک 8D">🎵</button>
+      <button id="btnSfx" class="active" title="صدای محیط">🔊</button>
+      <button id="btnFs" title="تمام صفحه">⛶</button>
+      <button id="btnHelp" title="راهنما">?</button>
+    </div>
+  </div>
+
+  <div class="teleport" id="teleport">
+    <div class="label">↗ پرش به زون</div>
+    <!-- buttons injected by JS -->
+  </div>
+
+  <div class="crosshair"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="minimap"><canvas id="mmap" width="160" height="160"></canvas></div>
+
+  <div class="infobar">
+    <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> حرکت ·
+    <span class="key">موس</span> چرخش ·
+    <span class="key">کلیک</span> روی زون
+  </div>
+
+  <!-- Click-to-resume overlay -->
+  <div class="clickPrompt" id="clickPrompt">
+    <div class="box">
+      <div class="icon">🖱️</div>
+      <div class="ttl">برای حرکت کلیک کنید</div>
+      <div class="sub">با موس بچرخ، با WASD راه برو، با ESC خروج</div>
+    </div>
+  </div>
+
+  <!-- Mobile -->
+  <div class="joy" id="joy"><div class="stick" id="stick"></div></div>
+  <div class="lookpad" id="lookpad"></div>
+</div>
+
+<!-- ========== Detail panel ========== -->
+<div class="panel" id="panel">
+  <button class="close" id="panelClose">×</button>
+  <div class="media" id="panelMedia"></div>
+  <div class="body">
+    <span class="tag" id="panelTag"></span>
+    <h2 id="panelTitle"></h2>
+    <p id="panelDesc"></p>
+    <div class="actions">
+      <button onclick="window.open('https://wa.me/989120000000?text=سلام، می‌خوام رزرو کنم','_blank')">📅 رزرو نوبت</button>
+      <button class="ghost" id="panelCloseBtn">بستن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== SCRIPTS ====================== -->
+<script src="content.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+// ============== GLOBALS ==============
+const ZONES = window.MOTIONX_DATA.ZONES;
+let scene, camera, renderer, controls;
+let clock = new THREE.Clock();
+const move = { f:false, b:false, l:false, r:false };
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+const SPEED = 12;
+const FLOOR_SIZE = 50;
+const PLAYER_HEIGHT = 1.7;
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const hotspots = []; // clickable spheres
+let teleporting = false;
+let teleportTarget = null;
+let teleportTimer = 0;
+
+// Audio
+let audioCtx, masterGain, musicGain, sfxGain;
+let musicPanner, musicOsc1, musicOsc2, musicFilter;
+let musicOn = true, sfxOn = true;
+const zoneAudios = []; // {panner, osc, gain}
+let musicAngle = 0;
+
+// ============== INIT ==============
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a18);
+  scene.fog = new THREE.FogExp2(0x0a0a18, 0.025);
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+  camera.position.set(0, PLAYER_HEIGHT, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  document.body.appendChild(renderer.domElement);
+
+  // Controls
+  controls = new PointerLockControls(camera, renderer.domElement);
+  scene.add(controls.getObject());
+
+  // Build world
+  buildLighting();
+  buildFloor();
+  buildWalls();
+  buildCenterPiece();
+  buildZones();
+
+  // Events
+  window.addEventListener('resize', onResize);
+  document.addEventListener('keydown', onKey);
+  document.addEventListener('keyup', onKey);
+  renderer.domElement.addEventListener('click', onCanvasClick);
+
+  // Controls lock/unlock events
+  controls.addEventListener('lock', () => {
+    document.getElementById('clickPrompt').classList.remove('show');
+  });
+  controls.addEventListener('unlock', () => {
+    // Only show prompt if no panel/intro open
+    if (!document.getElementById('panel').classList.contains('show') &&
+        document.getElementById('intro').style.display === 'none') {
+      document.getElementById('clickPrompt').classList.add('show');
+    }
+  });
+
+  // Click prompt → re-lock
+  document.getElementById('clickPrompt').addEventListener('click', () => {
+    if (!isMobile()) controls.lock();
+  });
+
+  // Top buttons
+  document.getElementById('btnMusic').addEventListener('click', toggleMusic);
+  document.getElementById('btnSfx').addEventListener('click', toggleSfx);
+  document.getElementById('btnFs').addEventListener('click', toggleFullscreen);
+  document.getElementById('btnHelp').addEventListener('click', showHelp);
+
+  // Panel close
+  document.getElementById('panelClose').addEventListener('click', closePanel);
+  document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+
+  // Build teleport menu + setup mobile
+  buildTeleportMenu();
+  if (isMobile()) setupMobileControls();
+
+  animate();
+}
+
+function isMobile() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+}
+
+// ============== WORLD ==============
+function buildLighting() {
+  scene.add(new THREE.AmbientLight(0x404060, 0.6));
+  const hemi = new THREE.HemisphereLight(0x8888ff, 0x222244, 0.5);
+  scene.add(hemi);
+
+  // Moving spotlights for vibe
+  const colors = [0x00ffff, 0xff00ff, 0xffaa00];
+  colors.forEach((c, i) => {
+    const sp = new THREE.SpotLight(c, 2, 60, Math.PI/6, 0.5, 1);
+    sp.position.set(Math.cos(i*2)*15, 12, Math.sin(i*2)*15);
+    sp.target.position.set(0, 0, 0);
+    scene.add(sp); scene.add(sp.target);
+  });
+}
+
+function buildFloor() {
+  // Reflective-ish dark floor with grid
+  const g = new THREE.PlaneGeometry(FLOOR_SIZE*2, FLOOR_SIZE*2, 50, 50);
+  const m = new THREE.MeshStandardMaterial({
+    color: 0x111122, metalness: 0.6, roughness: 0.35,
+  });
+  const floor = new THREE.Mesh(g, m);
+  floor.rotation.x = -Math.PI/2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Neon grid overlay
+  const grid = new THREE.GridHelper(FLOOR_SIZE*2, 40, 0x00ffff, 0x0066aa);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.35;
+  grid.position.y = 0.01;
+  scene.add(grid);
+}
+
+function buildWalls() {
+  // Outer walls
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, metalness:0.3, roughness:0.7, side: THREE.DoubleSide });
+  const h = 8;
+  const s = FLOOR_SIZE;
+  const sides = [
+    { pos:[0, h/2, -s], rot:[0,0,0], size:[s*2, h] },
+    { pos:[0, h/2,  s], rot:[0,Math.PI,0], size:[s*2, h] },
+    { pos:[-s, h/2, 0], rot:[0, Math.PI/2, 0], size:[s*2, h] },
+    { pos:[ s, h/2, 0], rot:[0,-Math.PI/2, 0], size:[s*2, h] },
+  ];
+  sides.forEach(w => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w.size[0], w.size[1]), wallMat);
+    m.position.set(...w.pos); m.rotation.set(...w.rot);
+    scene.add(m);
+  });
+
+  // Ceiling glow strips
+  for (let i = 0; i < 6; i++) {
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(s*1.5, 0.2, 0.4),
+      new THREE.MeshBasicMaterial({ color: i%2 ? 0x00ffff : 0xff00ff })
+    );
+    strip.position.set(0, h - 0.5, -s + (i*(s*2)/5));
+    scene.add(strip);
+  }
+}
+
+function buildCenterPiece() {
+  // Central "MOTION X" floating sign
+  const ringGeom = new THREE.TorusGeometry(2, 0.1, 16, 64);
+  const ringMat  = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+  const ring = new THREE.Mesh(ringGeom, ringMat);
+  ring.position.set(0, 3.5, 0);
+  ring.rotation.x = Math.PI/2;
+  scene.add(ring);
+  ring.userData.spin = true;
+  scene.userData.centerRing = ring;
+
+  const ring2 = new THREE.Mesh(
+    new THREE.TorusGeometry(2.6, 0.06, 16, 64),
+    new THREE.MeshBasicMaterial({ color: 0xff00ff })
+  );
+  ring2.position.set(0, 3.5, 0);
+  scene.add(ring2);
+  scene.userData.centerRing2 = ring2;
+
+  // Glow sphere at center
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 32, 32),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
+  sphere.position.set(0, 3.5, 0);
+  scene.add(sphere);
+  const sLight = new THREE.PointLight(0x00ffff, 3, 30);
+  sLight.position.set(0, 3.5, 0);
+  scene.add(sLight);
+}
+
+function buildZones() {
+  const loader = new THREE.TextureLoader();
+  ZONES.forEach(zone => {
+    const group = new THREE.Group();
+    group.position.set(zone.pos[0], 0, zone.pos[2]);
+
+    // Floor pad (colored)
+    const pad = new THREE.Mesh(
+      new THREE.CylinderGeometry(4, 4, 0.1, 32),
+      new THREE.MeshStandardMaterial({
+        color: zone.color, emissive: zone.color, emissiveIntensity: 0.3,
+        metalness: 0.5, roughness: 0.5
+      })
+    );
+    pad.position.y = 0.05;
+    group.add(pad);
+
+    // Ring around pad
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(4.2, 0.08, 8, 64),
+      new THREE.MeshBasicMaterial({ color: zone.color })
+    );
+    ring.position.y = 0.1;
+    ring.rotation.x = Math.PI/2;
+    group.add(ring);
+
+    // Big LED billboard with image
+    const boardGeom = new THREE.PlaneGeometry(6, 3.75);
+    const tex = loader.load(zone.img, t => {
+      t.colorSpace = THREE.SRGBColorSpace;
+    }, undefined, () => {
+      // fallback color
+    });
+    const boardMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+    const board = new THREE.Mesh(boardGeom, boardMat);
+    board.position.set(0, 3, 0);
+    // Make it face the center of the room
+    board.lookAt(0, 3, 0);
+    group.add(board);
+
+    // Frame around board (neon)
+    const frame = new THREE.Mesh(
+      new THREE.PlaneGeometry(6.3, 4.05),
+      new THREE.MeshBasicMaterial({ color: zone.color, side: THREE.DoubleSide })
+    );
+    frame.position.copy(board.position);
+    frame.position.y -= 0; frame.lookAt(0, 3, 0);
+    frame.position.sub(new THREE.Vector3(0,0,0).subVectors(group.position, new THREE.Vector3(0,3,0)).normalize().multiplyScalar(0.01));
+    group.add(frame);
+    // simpler: push board slightly in front
+    board.position.sub(new THREE.Vector3(0,0,0).subVectors(group.position, new THREE.Vector3(0,3,0)).normalize().multiplyScalar(0.02));
+
+    // Clickable hotspot sphere (above pad)
+    const hsGeom = new THREE.SphereGeometry(0.35, 24, 24);
+    const hsMat  = new THREE.MeshBasicMaterial({ color: zone.color });
+    const hs = new THREE.Mesh(hsGeom, hsMat);
+    hs.position.set(0, 1.5, 0);
+    hs.userData.zone = zone;
+    hs.userData.baseY = 1.5;
+    group.add(hs);
+    hotspots.push(hs);
+
+    // Light
+    const light = new THREE.PointLight(zone.color, 2.5, 18);
+    light.position.set(0, 4, 0);
+    group.add(light);
+
+    // Floating title text using sprite
+    const titleSprite = makeTextSprite(zone.title);
+    titleSprite.position.set(0, 5.5, 0);
+    group.add(titleSprite);
+
+    scene.add(group);
+    zone._group = group;
+    zone._hotspot = hs;
+  });
+}
+
+function makeTextSprite(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.font = 'bold 64px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, canvas.width/2, canvas.height/2);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(4, 1, 1);
+  return sprite;
+}
+
+// ============== INPUT ==============
+function onKey(e) {
+  const down = e.type === 'keydown';
+  switch(e.code) {
+    case 'KeyW': case 'ArrowUp': move.f = down; break;
+    case 'KeyS': case 'ArrowDown': move.b = down; break;
+    case 'KeyA': case 'ArrowLeft': move.l = down; break;
+    case 'KeyD': case 'ArrowRight': move.r = down; break;
+    case 'Escape':
+      if (down && document.getElementById('panel').classList.contains('show')) {
+        closePanel();
+      }
+      break;
+  }
+}
+
+function onCanvasClick(e) {
+  // If pointer not locked and on desktop → lock
+  if (!isMobile() && !controls.isLocked) {
+    controls.lock();
+    return;
+  }
+
+  // Check hotspot click using crosshair center
+  mouse.set(0, 0);
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(hotspots);
+  if (hits.length > 0) {
+    const zone = hits[0].object.userData.zone;
+    openPanel(zone);
+  }
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ============== TELEPORT MENU ==============
+function buildTeleportMenu() {
+  const container = document.getElementById('teleport');
+  ZONES.forEach(zone => {
+    const btn = document.createElement('button');
+    btn.className = 'tpbtn';
+    btn.innerHTML = `<span class="dot" style="background:#${zone.color.toString(16).padStart(6,'0')}; color:#${zone.color.toString(16).padStart(6,'0')}"></span><span class="name">${zone.title}</span>`;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      teleportTo(zone);
+    });
+    container.appendChild(btn);
+  });
+}
+
+function teleportTo(zone) {
+  // Position near zone, looking at center of zone
+  const offset = 6; // distance from zone center
+  const angle = Math.atan2(zone.pos[2], zone.pos[0]);
+  const tx = zone.pos[0] - Math.cos(angle) * offset;
+  const tz = zone.pos[2] - Math.sin(angle) * offset;
+
+  teleporting = true;
+  teleportTarget = { x: tx, z: tz, lookAt: new THREE.Vector3(zone.pos[0], 1.5, zone.pos[2]) };
+  teleportTimer = 0;
+
+  showToast(`📍 ${zone.title}`);
+
+  // After teleport, try re-lock pointer on desktop
+  setTimeout(() => {
+    if (!isMobile() && !controls.isLocked && !document.getElementById('panel').classList.contains('show')) {
+      // Don't force lock — show prompt
+      document.getElementById('clickPrompt').classList.add('show');
+    }
+  }, 600);
+}
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============== PANEL ==============
+function openPanel(zone) {
+  document.getElementById('panelTag').textContent = zone.badge;
+  document.getElementById('panelTitle').textContent = zone.title;
+  document.getElementById('panelDesc').textContent = zone.desc;
+
+  const media = document.getElementById('panelMedia');
+  media.innerHTML = '';
+  if (zone.video) {
+    const v = document.createElement('video');
+    v.src = zone.video; v.controls = true; v.autoplay = true; v.muted = true; v.loop = true;
+    media.appendChild(v);
+  } else {
+    const img = document.createElement('img');
+    img.src = zone.img;
+    media.appendChild(img);
+  }
+
+  document.getElementById('panel').classList.add('show');
+  if (controls.isLocked) controls.unlock();
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('show');
+  const m = document.getElementById('panelMedia');
+  const v = m.querySelector('video'); if (v) v.pause();
+}
+
+// ============== ANIMATE ==============
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+
+  // Teleport animation
+  if (teleporting && teleportTarget) {
+    teleportTimer += dt;
+    const t = Math.min(teleportTimer / 0.5, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const obj = controls.getObject();
+    obj.position.x += (teleportTarget.x - obj.position.x) * ease * 0.3;
+    obj.position.z += (teleportTarget.z - obj.position.z) * ease * 0.3;
+    obj.position.y = PLAYER_HEIGHT;
+    if (t >= 1) {
+      obj.position.set(teleportTarget.x, PLAYER_HEIGHT, teleportTarget.z);
+      camera.lookAt(teleportTarget.lookAt);
+      teleporting = false;
+      teleportTarget = null;
+    }
+  } else {
+    // Normal movement
+    velocity.x -= velocity.x * 10 * dt;
+    velocity.z -= velocity.z * 10 * dt;
+
+    direction.z = Number(move.f) - Number(move.b);
+    direction.x = Number(move.r) - Number(move.l);
+    direction.normalize();
+
+    const speed = SPEED;
+    if (move.f || move.b) velocity.z -= direction.z * speed * dt;
+    if (move.l || move.r) velocity.x -= direction.x * speed * dt;
+
+    // Apply via PointerLockControls (only when locked) OR manual when not locked (for mobile)
+    if (controls.isLocked) {
+      controls.moveRight(-velocity.x * dt);
+      controls.moveForward(-velocity.z * dt);
+    } else if (isMobile()) {
+      controls.moveRight(-velocity.x * dt);
+      controls.moveForward(-velocity.z * dt);
+    }
+
+    // Clamp to floor bounds
+    const p = controls.getObject().position;
+    p.x = Math.max(-FLOOR_SIZE+1, Math.min(FLOOR_SIZE-1, p.x));
+    p.z = Math.max(-FLOOR_SIZE+1, Math.min(FLOOR_SIZE-1, p.z));
+    p.y = PLAYER_HEIGHT;
+  }
+
+  // Animate hotspots (bobbing)
+  const time = clock.elapsedTime;
+  hotspots.forEach((h, i) => {
+    h.position.y = h.userData.baseY + Math.sin(time * 2 + i) * 0.2;
+    h.rotation.y += dt * 0.5;
+  });
+
+  // Center ring rotate
+  if (scene.userData.centerRing) {
+    scene.userData.centerRing.rotation.z += dt * 0.5;
+    scene.userData.centerRing2.rotation.y += dt * 0.7;
+  }
+
+  // 8D audio orbit
+  if (audioCtx && musicPanner && musicOn) {
+    musicAngle += dt * 0.6; // orbit speed
+    const r = 3;
+    musicPanner.positionX.value = Math.cos(musicAngle) * r;
+    musicPanner.positionZ.value = Math.sin(musicAngle) * r;
+    musicPanner.positionY.value = Math.sin(musicAngle * 0.5) * 0.5;
+  }
+
+  // Update spatial audio listener
+  if (audioCtx && audioCtx.listener && audioCtx.listener.positionX) {
+    const p = controls.getObject().position;
+    audioCtx.listener.positionX.value = p.x;
+    audioCtx.listener.positionY.value = p.y;
+    audioCtx.listener.positionZ.value = p.z;
+    // forward vector
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    audioCtx.listener.forwardX.value = dir.x;
+    audioCtx.listener.forwardY.value = dir.y;
+    audioCtx.listener.forwardZ.value = dir.z;
+    audioCtx.listener.upX.value = 0;
+    audioCtx.listener.upY.value = 1;
+    audioCtx.listener.upZ.value = 0;
+  }
+
+  // Mini-map
+  drawMinimap();
+
+  renderer.render(scene, camera);
+}
+
+// ============== MINIMAP ==============
+function drawMinimap() {
+  const c = document.getElementById('mmap');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.fillStyle = 'rgba(0,20,40,0.6)';
+  ctx.fillRect(0,0,c.width,c.height);
+
+  const scale = c.width / (FLOOR_SIZE*2);
+  const cx = c.width/2, cy = c.height/2;
+
+  // Zones
+  ZONES.forEach(z => {
+    ctx.fillStyle = '#' + z.color.toString(16).padStart(6,'0');
+    ctx.beginPath();
+    ctx.arc(cx + z.pos[0]*scale, cy + z.pos[2]*scale, 5, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Player
+  const p = controls.getObject().position;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(cx + p.x*scale, cy + p.z*scale, 4, 0, Math.PI*2);
+  ctx.fill();
+
+  // Player direction
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  ctx.strokeStyle = '#00ffff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx + p.x*scale, cy + p.z*scale);
+  ctx.lineTo(cx + p.x*scale + dir.x*10, cy + p.z*scale + dir.z*10);
+  ctx.stroke();
+}
+
+// ============== AUDIO ==============
+function initAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.7;
+    masterGain.connect(audioCtx.destination);
+
+    musicGain = audioCtx.createGain();
+    musicGain.gain.value = 0.4;
+    musicGain.connect(masterGain);
+
+    sfxGain = audioCtx.createGain();
+    sfxGain.gain.value = 0.5;
+    sfxGain.connect(masterGain);
+
+    // 8D ambient music: two detuned oscillators + filter + orbiting panner
+    musicPanner = audioCtx.createPanner();
+    musicPanner.panningModel = 'HRTF';
+    musicPanner.distanceModel = 'inverse';
+    musicPanner.refDistance = 1;
+    musicPanner.maxDistance = 20;
+    musicPanner.rolloffFactor = 1;
+    musicPanner.connect(musicGain);
+
+    musicFilter = audioCtx.createBiquadFilter();
+    musicFilter.type = 'lowpass';
+    musicFilter.frequency.value = 800;
+    musicFilter.Q.value = 4;
+    musicFilter.connect(musicPanner);
+
+    musicOsc1 = audioCtx.createOscillator();
+    musicOsc1.type = 'sine'; musicOsc1.frequency.value = 110;
+    musicOsc1.connect(musicFilter);
+    musicOsc1.start();
+
+    musicOsc2 = audioCtx.createOscillator();
+    musicOsc2.type = 'sine'; musicOsc2.frequency.value = 165;
+    const g2 = audioCtx.createGain(); g2.gain.value = 0.5;
+    musicOsc2.connect(g2); g2.connect(musicFilter);
+    musicOsc2.start();
+
+    // Slowly modulate filter for "movement"
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.1;
+    const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 400;
+    lfo.connect(lfoGain); lfoGain.connect(musicFilter.frequency);
+    lfo.start();
+
+    // Spatial zone sounds
+    ZONES.forEach(z => {
+      const panner = audioCtx.createPanner();
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 2; panner.maxDistance = 20; panner.rolloffFactor = 2;
+      panner.positionX.value = z.pos[0];
+      panner.positionY.value = 1;
+      panner.positionZ.value = z.pos[2];
+      panner.connect(sfxGain);
+
+      const osc = audioCtx.createOscillator();
+      // give each zone a slightly different tone
+      const freqMap = { vr: 220, racing: 110, ps5: 440, pc: 330, arcade: 660, billiard: 165 };
+      osc.frequency.value = freqMap[z.id] || 220;
+      osc.type = z.id === 'arcade' ? 'square' : 'sine';
+
+      const g = audioCtx.createGain(); g.gain.value = 0.08;
+      osc.connect(g); g.connect(panner);
+      osc.start();
+
+      zoneAudios.push({ panner, osc, gain: g, zone: z });
+    });
+
+  } catch(err) {
+    console.warn('Audio init failed:', err);
+  }
+}
+
+function toggleMusic() {
+  musicOn = !musicOn;
+  if (musicGain) musicGain.gain.value = musicOn ? 0.4 : 0;
+  document.getElementById('btnMusic').classList.toggle('active', musicOn);
+}
+
+function toggleSfx() {
+  sfxOn = !sfxOn;
+  if (sfxGain) sfxGain.gain.value = sfxOn ? 0.5 : 0;
+  document.getElementById('btnSfx').classList.toggle('active', sfxOn);
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+}
+
+function showHelp() {
+  alert(`🎮 راهنمای Motion X\n\n` +
+    `🖱️ کلیک روی صفحه: قفل کردن موس\n` +
+    `🎯 WASD یا فلش‌ها: حرکت\n` +
+    `🔄 موس: چرخش دوربین\n` +
+    `📍 منوی چپ: پرش سریع به هر زون\n` +
+    `🎵 کلیک روی کره‌های نورانی: اطلاعات\n` +
+    `🎧 هدفون = صدای 8D واقعی\n` +
+    `⛶ تمام صفحه برای حس بهتر\n\n` +
+    `📱 موبایل: جوی‌استیک چپ = حرکت، لمس راست = چرخش`);
+}
+
+// ============== MOBILE ==============
+function setupMobileControls() {
+  const joy = document.getElementById('joy');
+  const stick = document.getElementById('stick');
+  let active = false, cx = 0, cy = 0;
+
+  joy.addEventListener('touchstart', e => {
+    e.preventDefault();
+    active = true;
+    const r = joy.getBoundingClientRect();
+    cx = r.left + r.width/2;
+    cy = r.top + r.height/2;
+  });
+  joy.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!active) return;
+    const t = e.touches[0];
+    const dx = t.clientX - cx;
+    const dy = t.clientY - cy;
+    const max = 35;
+    const len = Math.min(Math.hypot(dx, dy), max);
+    const ang = Math.atan2(dy, dx);
+    const sx = Math.cos(ang) * len;
+    const sy = Math.sin(ang) * len;
+    stick.style.transform = `translate(calc(-50% + ${sx}px), calc(-50% + ${sy}px))`;
+
+    // map to movement
+    const nx = sx / max, ny = sy / max;
+    move.f = ny < -0.2;
+    move.b = ny > 0.2;
+    move.l = nx < -0.2;
+    move.r = nx > 0.2;
+  });
+  joy.addEventListener('touchend', e => {
+    e.preventDefault();
+    active = false;
+    stick.style.transform = 'translate(-50%, -50%)';
+    move.f = move.b = move.l = move.r = false;
+  });
+
+  // Look pad (right side)
+  const lookpad = document.getElementById('lookpad');
+  let lastX = 0, lastY = 0, looking = false;
+  lookpad.addEventListener('touchstart', e => {
+    e.preventDefault();
+    looking = true;
+    lastX = e.touches[0].clientX;
+    lastY = e.touches[0].clientY;
+  });
+  lookpad.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!looking) return;
+    const t = e.touches[0];
+    const dx = t.clientX - lastX;
+    const dy = t.clientY - lastY;
+    lastX = t.clientX; lastY = t.clientY;
+
+    // Rotate camera (yaw + pitch)
+    const obj = controls.getObject();
+    obj.rotation.y -= dx * 0.005;
+    camera.rotation.x -= dy * 0.005;
+    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+  });
+  lookpad.addEventListener('touchend', e => { e.preventDefault(); looking = false; });
+
+  // Tap on lookpad → check hotspot
+  let tapStart = 0, tapMoved = false;
+  lookpad.addEventListener('touchstart', () => { tapStart = Date.now(); tapMoved = false; });
+  lookpad.addEventListener('touchmove', () => { tapMoved = true; });
+  lookpad.addEventListener('touchend', () => {
+    if (!tapMoved && Date.now() - tapStart < 300) {
+      mouse.set(0, 0);
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(hotspots);
+      if (hits.length > 0) openPanel(hits[0].object.userData.zone);
+    }
+  });
+}
+
+// ============== START ==============
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('intro').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('intro').style.display = 'none';
+    document.getElementById('loader').classList.add('show');
+  }, 400);
+
+  // Fake progress
+  let p = 0;
+  const interval = setInterval(() => {
+    p += Math.random() * 15;
+    if (p >= 100) {
+      p = 100;
+      document.getElementById('fill').style.width = '100%';
+      document.getElementById('ltxt').textContent = 'آماده!';
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('loader').classList.remove('show');
+        document.getElementById('hud').classList.add('show');
+        init();
+        initAudio();
+        // On desktop, auto-prompt to lock
+        if (!isMobile()) {
+          setTimeout(() => {
+            document.getElementById('clickPrompt').classList.add('show');
+          }, 300);
+        } else {
+          showToast('👈 جوی‌استیک = حرکت | لمس راست = چرخش');
+        }
+      }, 400);
+    } else {
+      document.getElementById('fill').style.width = p + '%';
+    }
+  }, 150);
+});
+</script>
+</body>
+</html>
